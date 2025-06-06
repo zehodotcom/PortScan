@@ -1,51 +1,15 @@
+"""
+This module contains the core scanning logic for the port scanner.
+It includes functions for scanning individual ports and orchestrating
+the full scan process.
+"""
+
 import socket
 import sys
 import time
 
-# ANSI escape codes for console output coloring.
-COLOR_BRIGHT_GREEN = "\033[92m"  # Bright Green
-COLOR_BRIGHT_RED = "\033[91m"  # Bright Red
-COLOR_RESET = "\033[0m"  # Resets console color to default
-
-# Dictionary mapping common port numbers to their associated service names.
-COMMON_PORTS_INFO = {
-    20: "FTP Data (File Transfer Protocol Data)",
-    21: "FTP (File Transfer Protocol)",
-    22: "SSH (Secure Shell)",
-    23: "Telnet (Unencrypted Remote Access)",
-    25: "SMTP (Simple Mail Transfer Protocol)",
-    53: "DNS (Domain Name System)",
-    67: "DHCP Server (Dynamic Host Configuration Protocol)",
-    68: "DHCP Client (Dynamic Host Configuration Protocol)",
-    80: "HTTP (Hypertext Transfer Protocol)",
-    110: "POP3 (Post Office Protocol v3)",
-    135: "RPC (Remote Procedure Call - Windows)",
-    139: "NetBIOS/SMB (Windows File Sharing)",
-    143: "IMAP (Internet Message Access Protocol)",
-    161: "SNMP (Simple Network Management Protocol)",
-    162: "SNMP Trap (Simple Network Management Protocol Trap)",
-    389: "LDAP (Lightweight Directory Access Protocol)",
-    443: "HTTPS (HTTP Secure)",
-    445: "SMB/CIFS (Windows File Sharing)",
-    465: "SMTPS (SMTP Secure - Legacy)",
-    500: "ISAKMP/IKE (IPsec Key Exchange)",
-    587: "SMTP (Message Submission - TLS/SSL)",
-    636: "LDAPS (LDAP Secure)",
-    993: "IMAPS (IMAP Secure)",
-    995: "POP3S (POP3 Secure)",
-    1433: "MSSQL (Microsoft SQL Server)",
-    1521: "Oracle (Default Listener Port)",
-    1701: "L2TP (Layer 2 Tunneling Protocol)",
-    1723: "PPTP (Point-to-Point Tunneling Protocol)",
-    3306: "MySQL (MariaDB/Percona)",
-    3389: "RDP (Remote Desktop Protocol - Windows)",
-    5432: "PostgreSQL (Database)",
-    5900: "VNC (Virtual Network Computing)",
-    8080: "HTTP Proxy/Alt (Alternate HTTP)",
-    8443: "HTTPS Alt (Alternate HTTPS)",
-    9000: "Web/API (Commonly used for web servers/APIs, e.g., Docker)",
-    10000: "Webmin/Web Admin (Common for web-based administration tools)",
-}
+from utils import COLOR_BRIGHT_GREEN, COLOR_BRIGHT_RED, COLOR_RESET
+from common_ports import COMMON_PORTS_INFO
 
 
 def scan_single_port(target_ip: str, port: int) -> bool:
@@ -102,11 +66,13 @@ def scan_single_port(target_ip: str, port: int) -> bool:
         s.close()
 
 
-if __name__ == "__main__":
-    # Allow target IP to be passed as a command-line argument, default to localhost.
-    target_ip = "127.0.0.1" if len(sys.argv) < 2 else sys.argv[1]
+def run_full_scan(target_ip: str):
+    """
+    Orchestrates the full port scanning process for common ports on a given IP.
 
-    # Generate a sorted list of ports from the common ports dictionary.
+    Args:
+        target_ip (str): The IP address of the target host to scan.
+    """
     ports_to_scan = sorted(list(COMMON_PORTS_INFO.keys()))
 
     print(f"Initiating common port scan on {target_ip}...")
@@ -117,12 +83,10 @@ if __name__ == "__main__":
     closed_ports_count = 0
     detected_open_ports = []
 
-    # Iterate through each port and scan it sequentially.
     for port in ports_to_scan:
         is_open = scan_single_port(target_ip, port)
         if is_open:
             open_ports_count += 1
-            # Store port details for final summary.
             detected_open_ports.append(
                 (port, COMMON_PORTS_INFO.get(port, "Unknown Service"))
             )
@@ -141,6 +105,5 @@ if __name__ == "__main__":
 
     if detected_open_ports:
         print("\n--- Details of Open Ports ---")
-        # Sort detected open ports numerically for cleaner output.
         for p, service in sorted(detected_open_ports):
             print(f"{COLOR_BRIGHT_GREEN}- {p} ({service}){COLOR_RESET}")
